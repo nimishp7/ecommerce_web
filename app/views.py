@@ -1,8 +1,17 @@
-from django.shortcuts import render, redirect
+from itertools import product
+from statistics import quantiles
+from django.http import JsonResponse
+from django.shortcuts import redirect, render
 from django.views import View
 from .models import Customer, Product, Cart, OrderPlaced
+from .forms import CustomerRegistrationForm, CustomerProfileForm
+from django.contrib import messages
 from django.db.models import Q
-from django.http import HttpResponse,JsonResponse
+from django.http import JsonResponse
+from django.http import HttpResponse
+from django.contrib.auth.decorators import login_required
+from django.utils.decorators import method_decorator
+from django.contrib.auth.models import User
 
 
 class ProductView(View):
@@ -35,19 +44,21 @@ def add_to_cart(request):
     Cart(user=user, product=product).save()
     return redirect('/cart')
 
+
 def plus_cart(request):
     if request.method == 'GET':
         prod_id = request.GET['prod_id']
         c = Cart.objects.get(Q(product=prod_id) & Q(user=request.user))
-        c.quantity +=1
+        c.quantity += 1
         c.save()
         amount = 0.0
         shipping_amount = 70.0
-        cart_product = [p for p in Cart.objects.all() if p.user == request.user]
+        cart_product = [p for p in Cart.objects.all() if p.user ==
+                        request.user]
         for p in cart_product:
             tempamount = (p.quantity * p.product.discounted_price)
             amount += tempamount
-        data ={
+        data = {
             'qauntity': c.quantity,
             'amount': amount,
             'totalamount': amount + shipping_amount
@@ -59,21 +70,23 @@ def minus_cart(request):
     if request.method == 'GET':
         prod_id = request.GET['prod_id']
         c = Cart.objects.get(Q(product=prod_id) & Q(user=request.user))
-        c.quantity -=1
+        c.quantity -= 1
         c.save()
         amount = 0.0
         shipping_amount = 70.0
-        cart_product = [p for p in Cart.objects.all() if p.user == request.user]
+        cart_product = [p for p in Cart.objects.all() if p.user ==
+                        request.user]
         for p in cart_product:
             tempamount = (p.quantity * p.product.discounted_price)
             amount += tempamount
-        data ={
+        data = {
             'qauntity': c.quantity,
             'amount': amount,
             'totalamount': amount + shipping_amount
         }
         return JsonResponse(data)
-    
+
+
 def remove_cart(request):
     if request.method == 'GET':
         prod_id = request.GET['prod_id']
@@ -81,16 +94,18 @@ def remove_cart(request):
         c.delete()
         amount = 0.0
         shipping_amount = 70.0
-        cart_product = [p for p in Cart.objects.all() if p.user == request.user]
+        cart_product = [p for p in Cart.objects.all() if p.user ==
+                        request.user]
         for p in cart_product:
             tempamount = (p.quantity * p.product.discounted_price)
             amount += tempamount
-        data ={
+        data = {
             'amount': amount,
             'totalamount': amount + shipping_amount
         }
         return JsonResponse(data)
-    
+
+
 def show_cart(request):
     if request.user.is_authenticated:
         user = request.user
@@ -109,27 +124,34 @@ def show_cart(request):
         else:
             return render(request, 'app/emptycart.html')
 
+
 def mobile(request, data=None):
     if data == None:
         mobiles = Product.objects.filter(category='M')
     elif data == 'REDMI' or data == 'SAMSUNG':
         mobiles = Product.objects.filter(category='M').filter(brand=data)
     elif data == 'below':
-        mobiles = Product.objects.filter(category='M').filter(discounted_price__lt=10000)
+        mobiles = Product.objects.filter(
+            category='M').filter(discounted_price__lt=10000)
     elif data == 'above':
-        mobiles = Product.objects.filter(category='M').filter(discounted_price__gt=10000)
-    return render(request, 'app/mobile.html',{'mobiles':mobiles})
- 
+        mobiles = Product.objects.filter(
+            category='M').filter(discounted_price__gt=10000)
+    return render(request, 'app/mobile.html', {'mobiles': mobiles})
+
+
 def laptop(request, data=None):
     if data == None:
         laptops = Product.objects.filter(category='L')
     elif data == 'Asus' or data == 'Dell':
         laptops = Product.objects.filter(category='L').filter(brand=data)
     elif data == 'below':
-        laptops = Product.objects.filter(category='L').filter(discounted_price__lt=10000)
+        laptops = Product.objects.filter(
+            category='L').filter(discounted_price__lt=10000)
     elif data == 'above':
-        laptops = Product.objects.filter(category='L').filter(discounted_price__gt=10000)
-    return render(request, 'app/mobile.html',{'laptops':laptops})
+        laptops = Product.objects.filter(
+            category='L').filter(discounted_price__gt=10000)
+    return render(request, 'app/mobile.html', {'laptops': laptops})
+
 
 def topwear(request, data=None):
     if data == None:
@@ -137,10 +159,13 @@ def topwear(request, data=None):
     elif data == 'H&M' or data == 'Zara':
         topwears = Product.objects.filter(category='T').filter(brand=data)
     elif data == 'below':
-        topwears = Product.objects.filter(category='T').filter(discounted_price__lt=10000)
+        topwears = Product.objects.filter(
+            category='T').filter(discounted_price__lt=10000)
     elif data == 'above':
-        topwears = Product.objects.filter(category='T').filter(discounted_price__gt=10000)
-    return render(request, 'app/mobile.html',{'topwears':topwears})
+        topwears = Product.objects.filter(
+            category='T').filter(discounted_price__gt=10000)
+    return render(request, 'app/mobile.html', {'topwears': topwears})
+
 
 def bottmowear(request, data=None):
     if data == None:
@@ -148,11 +173,27 @@ def bottmowear(request, data=None):
     elif data == 'H&M' or data == 'Zara':
         bottmowears = Product.objects.filter(category='M').filter(brand=data)
     elif data == 'below':
-        bottmowears = Product.objects.filter(category='M').filter(discounted_price__lt=10000)
+        bottmowears = Product.objects.filter(
+            category='M').filter(discounted_price__lt=10000)
     elif data == 'above':
-        bottmowears = Product.objects.filter(category='M').filter(discounted_price__gt=10000)
-    return render(request, 'app/mobile.html',{'bottmowears':bottmowears})       
+        bottmowears = Product.objects.filter(
+            category='M').filter(discounted_price__gt=10000)
+    return render(request, 'app/mobile.html', {'bottmowears': bottmowears})
 
+
+class CustomerRegistrationView(View):
+    def get(self, request):
+        form = CustomerRegistrationForm()
+        return render(request, 'app/cutomerregistration.html', {'form': form})
+
+    def post(self, request):
+        form = CustomerRegistrationForm(request.POST)
+        if form.is_valid():
+            messages.succes(
+                request, 'Congratulation!! Registered succesfully'
+            )
+            form.save()
+        return render(request, 'app/cutomerregistration.html', {'form': form})
 
 
 def buy_now(request):
@@ -181,10 +222,6 @@ def mobile(request):
 
 def login(request):
     return render(request, 'app/login.html')
-
-
-def customerregistration(request):
-    return render(request, 'app/customerregistration.html')
 
 
 def checkout(request):
