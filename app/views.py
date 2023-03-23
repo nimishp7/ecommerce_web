@@ -200,12 +200,12 @@ def buy_now(request):
     return render(request, 'app/buynow.html')
 
 
-def profile(request):
-    return render(request, 'app/profile.html')
+
 
 
 def address(request):
-    return render(request, 'app/address.html')
+    add = Customer.objects.filter(user=request.user)
+    return render(request, 'app/address.html', {'add':add, 'active':'btn_primary'})
 
 
 def orders(request):
@@ -226,3 +226,23 @@ def login(request):
 
 def checkout(request):
     return render(request, 'app/checkout.html')
+
+class ProfileView(View):
+    def get(self, request):
+        form = CustomerProfileForm()
+        return render(request, 'app/profile.html', {'form':form, 'active':'btn-primary'})
+    
+    def post(self, request):
+       form = CustomerProfileForm(request.POST)
+       if form.is_valid():
+           user = request.user
+           name = form.cleaned_data['name']
+           locality = form.cleaned_data['locality']
+           city = form.cleaned_data['city']
+           state = form.cleaned_data['state']
+           zipcode = form.cleaned_data['zipcode']
+           reg = Customer(user=user, name=name, locality=locality, city=city, state=state, zipcode=zipcode)
+           reg.save()
+           messages.success(request,'congratulation! Profile Updated Succesfully ')
+       return render(request, 'app/profile.html', {'form': form, 'active': 'btn-primary`'})
+        
